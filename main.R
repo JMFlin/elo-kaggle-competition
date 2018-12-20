@@ -41,7 +41,7 @@ historical <- read_csv("data/historical_transactions.csv", n_max = 100000, col_t
   state_id = col_double(),
   subsector_id = col_double()
 )) %>%
-  purrr:set_names(~ str_to_lower(.) %>%
+  purrr::set_names(~ str_to_lower(.) %>%
               str_replace_all(" ", "_"))
 
 
@@ -70,7 +70,7 @@ merchants <- read_csv("data/merchants.csv", n_max = 100000, col_types = cols(
   state_id = col_double(),
   category_2 = col_factor(levels = NULL, ordered = FALSE, include_na = TRUE)
 )) %>%
-  purrr:set_names(~ str_to_lower(.) %>%
+  purrr::set_names(~ str_to_lower(.) %>%
               str_replace_all(" ", "_"))
 
 
@@ -90,7 +90,7 @@ new.merchant.transactions <- read_csv("data/new_merchant_transactions.csv", n_ma
   state_id = col_double(),
   subsector_id = col_double()
 )) %>%
-  purrr:set_names(~ str_to_lower(.) %>%
+  purrr::set_names(~ str_to_lower(.) %>%
               str_replace_all(" ", "_"))
 
 
