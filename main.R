@@ -11,6 +11,7 @@ pacman::p_load( # let pacman control packages
   "janitor"
 )
 
+usethis::use_tidy_style()
 
 train.data <- read_csv("data/train.csv", n_max = 100000, col_types = cols(
   first_active_month = col_character(),
