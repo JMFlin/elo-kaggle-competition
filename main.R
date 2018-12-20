@@ -12,9 +12,11 @@ pacman::p_load( # let pacman control packages
   "styler"
 )
 
+read.rows <- 5000000
+
 #usethis::use_tidy_style()
 
-train.data <- read_csv("data/train.csv", n_max = 100000, col_types = cols(
+train.data <- read_csv("data/train.csv", n_max = read.rows, col_types = cols(
   first_active_month = col_character(),
   card_id = col_character(),
   feature_1 = col_factor(levels = NULL, ordered = FALSE, include_na = TRUE),
@@ -22,12 +24,12 @@ train.data <- read_csv("data/train.csv", n_max = 100000, col_types = cols(
   feature_3 = col_factor(levels = NULL, ordered = FALSE, include_na = TRUE),
   target = col_double()
 )) %>%
-  set_names(~ str_to_lower(.) %>%
+  purrr::set_names(~ str_to_lower(.) %>%
               str_replace_all(" ", "_"))
 
 
 
-historical <- read_csv("data/historical_transactions.csv", n_max = 100000, col_types = cols(
+historical <- read_csv("data/historical_transactions.csv", n_max = read.rows, col_types = cols(
   authorized_flag = col_character(),
   card_id = col_character(),
   city_id = col_double(),
@@ -48,7 +50,7 @@ historical <- read_csv("data/historical_transactions.csv", n_max = 100000, col_t
 
 
 
-merchants <- read_csv("data/merchants.csv", n_max = 100000, col_types = cols(
+merchants <- read_csv("data/merchants.csv", n_max = read.rows, col_types = cols(
   merchant_id = col_character(),
   merchant_group_id = col_double(),
   merchant_category_id = col_double(),
@@ -76,7 +78,7 @@ merchants <- read_csv("data/merchants.csv", n_max = 100000, col_types = cols(
               str_replace_all(" ", "_"))
 
 
-new.merchant.transactions <- read_csv("data/new_merchant_transactions.csv", n_max = 100000, col_types = cols(
+new.merchant.transactions <- read_csv("data/new_merchant_transactions.csv", n_max = read.rows, col_types = cols(
   authorized_flag = col_factor(levels = NULL, ordered = FALSE, include_na = TRUE),
   card_id = col_character(),
   city_id = col_double(),
@@ -93,13 +95,37 @@ new.merchant.transactions <- read_csv("data/new_merchant_transactions.csv", n_ma
   subsector_id = col_double()
 )) %>%
   purrr::set_names(~ str_to_lower(.) %>%
-              str_replace_all(" ", "_"))
+              str_replace_all(" ", "_")) 
+
+train.data <- bind_cols(train.data %>%
+                          select(c(card_id)),
+                        train.data %>%
+                          select(-c(card_id)) %>%
+                          purrr::set_names(paste(colnames(.), "train", sep = "_")))
+
+historical <- bind_cols(historical %>%
+                          select(c(card_id, city_id, state_id, subsector_id, merchant_id, merchant_category_id)),
+                        historical %>%
+                          select(-c(card_id, city_id, state_id, subsector_id, merchant_id, merchant_category_id)) %>%
+                          purrr::set_names(paste(colnames(.), "historical", sep = "_")))
+
+merchants <- bind_cols(merchants %>%
+                         select(c(city_id, state_id, subsector_id, merchant_id, merchant_category_id, merchant_category_id)),
+                       merchants %>%
+                         select(-c(city_id, state_id, subsector_id, merchant_id, merchant_category_id, merchant_category_id)) %>%
+                         purrr::set_names(paste(colnames(.), "merchants", sep = "_")))
+
+new.merchant.transactions <- bind_cols(new.merchant.transactions %>%
+                                         select(c(card_id, city_id, state_id, subsector_id, merchant_id, merchant_category_id)),
+                                       new.merchant.transactions %>%
+                                         select(-c(card_id, city_id, state_id, subsector_id, merchant_id, merchant_category_id)) %>%
+  purrr::set_names(paste(colnames(.), "new.merchant.transactions", sep = "_")))
 
 
 
-joined.data <- inner_join(train.data, historical, by = "card_id") %>%
-  inner_join(., merchants, by = "merchant_id") 
-#%>%
-#  inner_join(., new.merchant.transactions, by = c("card_id", "merchant_id"))
+# joined.data <- inner_join(train.data, historical, by = "card_id") %>%
+#   inner_join(., new.merchant.transactions, by = c("card_id")) %>% #"city_id","state_id","subsector_id", , "merchant_id","merchant_category_id"
+#   inner_join(., merchants, by = c("city_id","state_id","subsector_id","merchant_id","merchant_category_id"))
+  
   
 
