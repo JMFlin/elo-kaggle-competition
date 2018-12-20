@@ -8,7 +8,8 @@ pacman::p_load( # let pacman control packages
   "futile.logger",
   "caret",
   "tidyverse",
-  "janitor"
+  "janitor",
+  "styler"
 )
 
 usethis::use_tidy_style()
