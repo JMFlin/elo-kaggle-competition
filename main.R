@@ -14,7 +14,7 @@ pacman::p_load( # let pacman control packages
 
 read.rows <- 5000000
 
-#usethis::use_tidy_style()
+usethis::use_tidy_style()
 
 train.data <- read_csv("data/train.csv", n_max = read.rows, col_types = cols(
   first_active_month = col_character(),
