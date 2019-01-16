@@ -9,12 +9,15 @@ pacman::p_load( # let pacman control packages
   "caret",
   "tidyverse",
   "janitor",
-  "styler"
+  "styler",
+  "tidyquant",
+  "corrplot",
+  "gbm"
 )
 
-read.rows <- 5000000
+read.rows <- 500000000
 
-usethis::use_tidy_style()
+#usethis::use_tidy_style()
 
 train.data <- read_csv("data/train.csv", n_max = read.rows, col_types = cols(
   first_active_month = col_character(),
@@ -27,6 +30,16 @@ train.data <- read_csv("data/train.csv", n_max = read.rows, col_types = cols(
   purrr::set_names(~ str_to_lower(.) %>%
               str_replace_all(" ", "_"))
 
+
+test.data <- read_csv("data/test.csv", n_max = read.rows, col_types = cols(
+  first_active_month = col_character(),
+  card_id = col_character(),
+  feature_1 = col_factor(levels = NULL, ordered = FALSE, include_na = TRUE),
+  feature_2 = col_factor(levels = NULL, ordered = FALSE, include_na = TRUE),
+  feature_3 = col_factor(levels = NULL, ordered = FALSE, include_na = TRUE)
+)) %>%
+  purrr::set_names(~ str_to_lower(.) %>%
+                     str_replace_all(" ", "_"))
 
 
 historical <- read_csv("data/historical_transactions.csv", n_max = read.rows, col_types = cols(
@@ -103,6 +116,13 @@ train.data <- bind_cols(train.data %>%
                           select(-c(card_id)) %>%
                           purrr::set_names(paste(colnames(.), "train", sep = "_")))
 
+test.data <- bind_cols(test.data %>%
+                         select(c(card_id)),
+                       test.data %>%
+                         select(-c(card_id)) %>%
+                         purrr::set_names(paste(colnames(.), "test", sep = "_")))
+
+
 historical <- bind_cols(historical %>%
                           select(c(card_id, city_id, state_id, subsector_id, merchant_id, merchant_category_id)),
                         historical %>%
@@ -126,6 +146,70 @@ new.merchant.transactions <- bind_cols(new.merchant.transactions %>%
 # joined.data <- inner_join(train.data, historical, by = "card_id") %>%
 #   inner_join(., new.merchant.transactions, by = c("card_id")) %>% #"city_id","state_id","subsector_id", , "merchant_id","merchant_category_id"
 #   inner_join(., merchants, by = c("city_id","state_id","subsector_id","merchant_id","merchant_category_id"))
-  
-  
 
+train.data <- train.data %>%
+  mutate(month = factor(month(ymd(first_active_month_train, truncated = 1))),
+         year = factor(year(ymd(first_active_month_train, truncated = 1))))
+
+CreatePlots(train.data)
+
+train.data <- train.data %>%
+  select(-card_id, -first_active_month_train) %>%
+  select(target_train, everything())
+
+predictors <- c("feature_1_train", "feature_2_train", 
+                "feature_3_train", "month", "year")
+
+target <- "target_train"
+
+
+train.index <- createDataPartition(as_vector(train.data[,target]), 
+                                   p = .6, 
+                                   list = FALSE, 
+                                   times = 1)
+
+train.data.split <- train.data[ train.index,]
+test.data.split <- train.data[-train.index,]
+
+gbmGrid <- expand.grid(interaction.depth = c(1, 5, 10, 20),
+                       n.trees = (1:30)*10,
+                       shrinkage = 0.1,
+                       n.minobsinnode = 20)
+
+ctrl <- trainControl(method = "cv",
+                     number = 2,
+                     verboseIter = FALSE,
+                     allowParallel = TRUE
+)
+
+x <- train.data.split %>%
+  select(predictors) %>%
+  as.data.frame()
+
+y <- train.data.split %>%
+  select(target) %>%
+  as.data.frame() %>%
+  as_vector()
+
+gbm.model <- train(x,
+                   y,
+                   method = "gbm",
+                   trControl = ctrl,
+                   tuneGrid = gbmGrid,
+                   metric = "RMSE"
+)
+
+lm.model <- train(x,
+                   y,
+                   method = "lm",
+                   metric = "RMSE"
+                   )
+
+Evaluate(gbm.model, train.data.split)
+Evaluate(lm.model, train.data.split)
+
+
+
+
+
+PredictTest(test.data, lm.model)
