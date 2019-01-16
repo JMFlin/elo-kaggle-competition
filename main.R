@@ -15,9 +15,15 @@ pacman::p_load( # let pacman control packages
   "gbm"
 )
 
+
 read.rows <- 500000000
 
-#usethis::use_tidy_style()
+file.sources <- list.files("utils",
+                           pattern = "*.R$", full.names = TRUE,
+                           ignore.case = TRUE
+)
+
+invisible(sapply(file.sources, source, .GlobalEnv))#usethis::use_tidy_style()
 
 train.data <- read_csv("data/train.csv", n_max = read.rows, col_types = cols(
   first_active_month = col_character(),
@@ -153,6 +159,11 @@ train.data <- train.data %>%
 
 CreatePlots(train.data)
 
+outliers <- train.data %>%
+  filter(target_train < -30)
+
+
+
 train.data <- train.data %>%
   select(-card_id, -first_active_month_train) %>%
   select(target_train, everything())
@@ -209,7 +220,5 @@ Evaluate(gbm.model, train.data.split)
 Evaluate(lm.model, train.data.split)
 
 
-
-
-
+# don't run
 PredictTest(test.data, lm.model)
