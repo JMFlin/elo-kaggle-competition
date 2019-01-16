@@ -76,14 +76,6 @@ CreatePlots <- function(train.data) {
     cor(method = "spearman") %>%
     corrplot(type = "lower", method = "number", tl.col = "black", diag = FALSE, tl.cex = 0.9, number.cex = 0.9))
   
-  
-  print(train.data %>% 
-    select(-card_id, -first_active_month_train) %>%
-    mutate_if(is.character, ~ as.character(.) %>% as.numeric()) %>% 
-    model.matrix(~.-1, .) %>% 
-    cor(method = "spearman") %>%
-    corrplot(type = "lower", method = "number", tl.col = "black", diag = FALSE, tl.cex = 0.9, number.cex = 0.9))
-  
   dev.off()
   #ggsave("figs/plots.pdf", device = "pdf", width = 20, height = 20, units = "cm", limitsize = FALSE)
 }
